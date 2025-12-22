@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Notebook Board Game</title>
+    <style>
+        :root {
+            --tile-size: 32px; 
+            --start-color: #27ae60;
+            --win-color: #c0392b;
+            --board-height: 420px;
+            --box-size: 110px; 
+            --edge-gap: 10px;   
+        }
+
+        body {
+            margin: 0; padding: 0; background: #000; height: 100vh;
+            display: flex; justify-content: center; align-items: center;
+            overflow: hidden; font-family: 'Arial Black', sans-serif; touch-action: none;
+        }
+
+        /* --- Intro & Splash Styles --- */
+        #splash-overlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: #000; z-index: 9999; display: flex; flex-direction: column;
+            justify-content: center; align-items: center; cursor: pointer;
+        }
+
+        #tap-text {
+            color: #f39c12; font-size: 28px; letter-spacing: 5px;
+            animation: pulse 1.5s infinite; text-align: center;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(1.05); }
+        }
+
+        #intro-video {
+            display: none; width: 100%; height: 100%; object-fit: cover;
+        }
+
+        /* --- Board Styles --- */
+        #viewport {
+            width: 100vw; height: 100vh; display: flex; align-items: center;
+            overflow: hidden; cursor: grab; position: relative; visibility: hidden;
+        }
+
+        #board-rectangle {
+            position: absolute; left: 0; height: var(--board-height);
+            background-color: #9ed670;
+            background-image: radial-gradient(#8dbd61 0.5px, transparent 0.5px), 
+                              radial-gradient(#b59a7a 0.5px, #9ed670 0.5px);
+            background-size: 12px 12px;
+            border: 10px solid #5d4037; border-left-width: 5px; border-right-width: 5px;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            will-change: transform;
+        }
+
+        #start-box, #win-box {
+            position: absolute; width: var(--box-size); height: var(--box-size);
+            background: #fff; display: flex; justify-content: center; align-items: center;
+            font-weight: bold; z-index: 100; border-radius: 8px; border: 4px solid;
+        }
+        #start-box { bottom: var(--edge-gap); left: var(--edge-gap); border-color: var(--start-color); color: var(--start-color); }
+        #win-box { top: var(--edge-gap); border-color: var(--win-color); color: var(--win-color); }
+
+        .tile {
+            position: absolute; width: var(--tile-size); height: var(--tile-size);
+            background: white; border: 1px solid #ddd; box-sizing: border-box;
+            display: flex; justify-content: center; align-items: center;
+            z-index: 5; font-size: 11px; font-weight: bold; color: #d35400;
+        }
+
+        /* Portals */
+        .portal-tunnel { background: radial-gradient(circle, #fff 10%, #bdc3c7 100%) !important; border: 2px solid #333 !important; }
+        .portal-river { background: radial-gradient(circle, #fff 10%, #a2d2ff 100%) !important; border: 3px solid #3498db !important; }
+
+        #graphics-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2; }
+        .river-base { fill: none; stroke: #3498db; stroke-width: 32; stroke-linecap: round; filter: url(#waterDistort); }
+        .pipe-outline { fill: none; stroke: #333; stroke-width: 24; stroke-linecap: round; }
+        .pipe-silver { fill: none; stroke: #c0c0c0; stroke-width: 20; stroke-linecap: round; }
+    </style>
+</head>
+<body>
+
+    <!-- Intro Splash -->
+    <div id="splash-overlay" onclick="startIntro()">
+        <div id="tap-text">TAP TO PLAY</div>
+        <video id="intro-video" playsinline>
+            <source src="./intro.mp4" type="video/mp4">
+        </video>
+    </div>
+
+    <!-- Board -->
+    <div id="viewport">
+        <div id="board-rectangle">
+            <div id="start-box"><div style="text-align:center">STARTING<br>POINT</div></div>
+            <div id="win-box"><div style="text-align:center">WINNING<br>POINT</div></div>
+            <svg id="graphics-layer">
+                <defs>
+                    <filter id="waterDistort">
+                        <feTurbulence type="fractalNoise" baseFrequency="0.03 0.08" numOctaves="3" result="noise" />
+                        <feDisplacementMap in="SourceGraphic" in2="noise" scale="5" />
+                    </filter>
+                </defs>
+                <g id="mid-layer"></g><g id="top-layer"></g>
+            </svg>
+        </div>
+    </div>
+
+<script>
+    const splash = document.getElementById('splash-overlay');
+    const video = document.getElementById('intro-video');
+    const tapText = document.getElementById('tap-text');
+    const viewport = document.getElementById('viewport');
+
+    // Intro Control
+    function startIntro() {
+        tapText.style.display = 'none';
+        video.style.display = 'block';
+        
+        // Try play, if fails (missing file), skip to board
+        video.play().catch(err => {
+            console.log("Video missing, skipping...");
+            showBoard();
+        });
+    }
+
+    video.onended = showBoard;
+
+    function showBoard() {
+        splash.style.transition = "opacity 0.5s";
+        splash.style.opacity = "0";
+        setTimeout(() => {
+            splash.style.display = "none";
+            viewport.style.visibility = "visible";
+            generateRoad();
+        }, 500);
+    }
+
+    // Board Generation
+    const board = document.getElementById('board-rectangle');
+    const winBox = document.getElementById('win-box');
+    const pathArr = [];
+    const TILE = 32;
+
+    const pairMap = { 7: 1, 15: 1, 24: 2, 35: 2 };
+
+    function generateRoad() {
+        let x = 65 - (TILE / 2), y = 272;
+        const add = (dir, count) => {
+            for (let i = 0; i < count; i++) {
+                pathArr.push({ x, y });
+                if (dir === 'UP') y -= TILE; else if (dir === 'DOWN') y += TILE;
+                else if (dir === 'LEFT') x -= TILE; else if (dir === 'RIGHT') x += TILE;
+            }
+        };
+        add('UP', 8); add('RIGHT', 12); add('DOWN', 6); add('LEFT', 8);
+        add('DOWN', 4); add('RIGHT', 17); add('UP', 11); add('RIGHT', 12);
+
+        pathArr.forEach((pos, index) => {
+            const num = index + 1;
+            const tile = document.createElement('div');
+            tile.className = 'tile';
+            if (pairMap[num]) {
+                if(num === 7 || num === 15) tile.className += ' portal-tunnel';
+                if(num === 24 || num === 35) tile.className += ' portal-river';
+                tile.innerText = pairMap[num];
+            } else {
+                tile.style.backgroundColor = '#f1c40f';
+            }
+            tile.style.left = pos.x + 'px'; tile.style.top = pos.y + 'px';
+            board.appendChild(tile);
+        });
+
+        const last = pathArr[pathArr.length-1];
+        winBox.style.left = (last.x + TILE) + 'px';
+        winBox.style.top = (last.y - 39) + 'px';
+        board.style.width = (last.x + 200) + 'px';
+        
+        setupGraphics();
+    }
+
+    function setupGraphics() {
+        const p = (i) => pathArr[i-1];
+        const mid = document.getElementById('mid-layer');
+        const top = document.getElementById('top-layer');
+        
+        mid.innerHTML = `<path d="M ${p(7).x+32} ${p(7).y+16} C ${p(7).x+100} ${p(7).y+16}, ${p(15).x+16} ${p(15).y+100}, ${p(15).x+16} ${p(15).y+32}" class="pipe-outline"/><path d="M ${p(7).x+32} ${p(7).y+16} C ${p(7).x+100} ${p(7).y+16}, ${p(15).x+16} ${p(15).y+100}, ${p(15).x+16} ${p(15).y+32}" class="pipe-silver"/>`;
+        top.innerHTML = `<path d="M ${p(24).x} ${p(24).y+16} C ${p(24).x-80} ${p(24).y+16}, ${p(35).x+16} ${p(35).y-80}, ${p(35).x+16} ${p(35).y}" class="river-base"/>`;
+    }
+
+    // Drag Logic
+    let isD = false, currX = 0, lastX = 0;
+    const getX = (e) => e.touches ? e.touches[0].pageX : e.pageX;
+    viewport.onmousedown = (e) => { isD = true; lastX = getX(e); };
+    window.onmousemove = (e) => {
+        if (!isD) return;
+        let x = getX(e);
+        currX = Math.min(0, currX + (x - lastX));
+        board.style.transform = `translateX(${currX}px)`;
+        lastX = x;
+    };
+    window.onmouseup = () => isD = false;
+    viewport.ontouchstart = (e) => { isD = true; lastX = getX(e); };
+    window.ontouchmove = (e) => {
+        if (!isD) return;
+        let x = getX(e);
+        currX = Math.min(0, currX + (x - lastX));
+        board.style.transform = `translateX(${currX}px)`;
+        lastX = x;
+    };
+    window.ontouchend = () => isD = false;
+</script>
+</body>
+</html>
+
