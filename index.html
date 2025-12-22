@@ -15,132 +15,74 @@
         }
 
         body {
-            margin: 0;
-            padding: 0;
-            background: #000;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow: hidden;
-            font-family: 'Arial Black', sans-serif;
-            touch-action: none;
+            margin: 0; padding: 0; background: #000; height: 100vh;
+            display: flex; justify-content: center; align-items: center;
+            overflow: hidden; font-family: 'Arial Black', sans-serif;
+            touch-action: none; -webkit-tap-highlight-color: transparent;
         }
 
-        /* --- TAP TO PLAY & INTRO STYLES --- */
+        /* --- TAP TO PLAY & INTRO LAYER --- */
         #splash-overlay {
-            position: fixed;
-            top: 0; left: 0;
+            position: fixed; top: 0; left: 0;
             width: 100vw; height: 100vh;
-            background: #000;
-            z-index: 99999; 
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            cursor: pointer;
-            pointer-events: auto;
+            background: #000; z-index: 99999; 
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer; pointer-events: auto;
         }
 
         #tap-msg {
-            color: #e67e22;
-            font-size: 22px;
-            letter-spacing: 4px;
-            border: 2px solid #e67e22;
-            padding: 15px 30px;
-            border-radius: 50px;
-            animation: pulse 1.5s infinite;
-            text-align: center;
+            color: #e67e22; font-size: 24px; letter-spacing: 5px;
+            border: 3px solid #e67e22; padding: 20px 40px;
+            border-radius: 60px; animation: pulse 1.5s infinite;
+            text-align: center; font-weight: 900;
         }
 
         @keyframes pulse {
-            0%, 100% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.05); opacity: 0.6; }
+            0%, 100% { transform: scale(1); opacity: 1; box-shadow: 0 0 0px #e67e22; }
+            50% { transform: scale(1.05); opacity: 0.5; box-shadow: 0 0 20px #e67e22; }
         }
 
         #intro-video {
-            display: none;
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            object-fit: cover;
+            display: none; position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover; z-index: 100;
         }
 
-        /* --- ORIGINAL VIEWPORT STYLE (Added Visibility Hidden) --- */
+        /* --- VIEWPORT STYLE --- */
         #viewport {
-            width: 100vw;
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            overflow: hidden;
-            cursor: grab;
-            position: relative;
-            visibility: hidden; 
+            width: 100vw; height: 100vh;
+            display: flex; align-items: center;
+            overflow: hidden; cursor: grab;
+            position: relative; visibility: hidden; 
         }
 
         #viewport:active { cursor: grabbing; }
 
-        /* Board with Grass & Soil Texture */
+        /* Board Rectangle */
         #board-rectangle {
-            position: absolute;
-            left: 0;
-            height: var(--board-height);
-            background-color: #9ed670; /* Light Green Grass */
+            position: absolute; left: 0; height: var(--board-height);
+            background-color: #9ed670;
             background-image: radial-gradient(#8dbd61 0.5px, transparent 0.5px), 
-                              radial-gradient(#b59a7a 0.5px, #9ed670 0.5px); /* Mitti/Soil spots */
+                              radial-gradient(#b59a7a 0.5px, #9ed670 0.5px);
             background-size: 10px 10px;
-            border-top: 10px solid #5d4037; 
-            border-bottom: 10px solid #5d4037;
-            border-left: 5px solid #5d4037;
-            border-right: 5px solid #5d4037;
+            border-top: 10px solid #5d4037; border-bottom: 10px solid #5d4037;
+            border-left: 5px solid #5d4037; border-right: 5px solid #5d4037;
             box-shadow: 0 0 50px rgba(0,0,0,0.8);
-            will-change: transform;
-            transform: translateX(0px);
+            will-change: transform; transform: translateX(0px);
         }
 
         #start-box, #win-box {
-            position: absolute;
-            width: var(--box-size);
-            height: var(--box-size);
-            background: #fff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-weight: bold;
-            z-index: 100;
-            box-sizing: border-box;
-            border-radius: 8px;
-            border: 4px solid;
+            position: absolute; width: var(--box-size); height: var(--box-size);
+            background: #fff; display: flex; justify-content: center; align-items: center;
+            font-weight: bold; z-index: 100; box-sizing: border-box;
+            border-radius: 8px; border: 4px solid;
         }
-
         #start-box { bottom: var(--edge-gap); left: var(--edge-gap); border-color: var(--start-color); color: var(--start-color); }
         #win-box { top: var(--edge-gap); border-color: var(--win-color); color: var(--win-color); }
 
-        #graphics-layer {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 2;
-        }
-
-        .tile {
-            position: absolute;
-            width: var(--tile-size);
-            height: var(--tile-size);
-            background: white;
-            border: 1px solid #ddd;
-            box-sizing: border-box;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 5;
-            font-size: 11px;
-            font-weight: bold;
-            color: #d35400;
-        }
-
+        #graphics-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2; }
+        .tile { position: absolute; width: var(--tile-size); height: var(--tile-size); background: white; border: 1px solid #ddd; box-sizing: border-box; display: flex; justify-content: center; align-items: center; z-index: 5; font-size: 11px; font-weight: bold; color: #d35400; }
+        
         /* Specialized Portals */
         .portal-tunnel { background: radial-gradient(circle, #fff 10%, #bdc3c7 100%) !important; border: 2px solid #333 !important; }
         .portal-river { background: radial-gradient(circle, #fff 10%, #a2d2ff 100%) !important; border: 3px solid #3498db !important; }
@@ -150,42 +92,32 @@
         .portal-teleport { background: radial-gradient(circle, #fff 10%, #ffeaa7 100%) !important; border: 2px solid #fdcb6e !important; box-shadow: 0 0 10px #f1c40f; }
 
         .label { font-size: 13px; text-align: center; pointer-events: none; }
-
-        /* Path Graphics styles */
         .pipe-outline { fill: none; stroke: #333; stroke-width: 24; stroke-linecap: round; }
         .pipe-silver { fill: none; stroke: #c0c0c0; stroke-width: 20; stroke-linecap: round; }
-        
         .river-base { fill: none; stroke: #3498db; stroke-width: 32; stroke-linecap: round; filter: url(#waterDistort); }
         .wave-layer { fill: none; stroke: rgba(255,255,255,0.4); stroke-linecap: round; animation: moveOcean linear infinite; }
         @keyframes moveOcean { from { stroke-dashoffset: 400; } to { stroke-dashoffset: 0; } }
-
         .rail-bed { fill: none; stroke: #636e72; stroke-width: 14; stroke-linecap: round; }
         .rail-tracks { fill: none; stroke: #2d3436; stroke-width: 8; stroke-dasharray: 2, 6; }
-
         .galaxy-base { fill: none; stroke: #4834d4; stroke-width: 20; stroke-linecap: round; filter: blur(4px); opacity: 0.6; }
         .galaxy-core { fill: none; stroke: #686de0; stroke-width: 12; stroke-linecap: round; }
         .galaxy-stars { fill: none; stroke: #ffffff; stroke-width: 2; stroke-dasharray: 2, 20; animation: moveStars 4s linear infinite; }
         @keyframes moveStars { from { stroke-dashoffset: 200; } to { stroke-dashoffset: 0; } }
-
         .road-base { fill: none; stroke: #2c3e50; stroke-width: 24; stroke-linecap: round; }
         .road-lines { fill: none; stroke: #f1c40f; stroke-width: 2px; stroke-dasharray: 8, 12; stroke-linecap: round; }
-        
         .stationary-icon { position: absolute; z-index: 20; pointer-events: none; display: flex; align-items: center; justify-content: center; }
         .fish-tiny { font-size: 8px; display: block; transform: scale(-1, -1); }
-        
         .fish-group { opacity: 0.45; filter: url(#waterDistort); }
-
         .river-grass { fill: #27ae60; opacity: 0.6; }
-
     </style>
 </head>
 <body>
 
-<!-- TAP TO PLAY OVERLAY -->
-<div id="splash-overlay">
+<!-- SPLASH LAYER -->
+<div id="splash-overlay" onclick="startIntro()">
     <div id="tap-msg">TAP TO PLAY</div>
-    <video id="intro-video" playsinline>
-        <source src="./intro.mp4" type="video/mp4">
+    <video id="intro-video" playsinline preload="auto" onended="showBoard()" onerror="showBoard()">
+        <source src="intro.mp4" type="video/mp4">
     </video>
 </div>
 
@@ -215,29 +147,16 @@
     const tapMsg = document.getElementById('tap-msg');
     const viewport = document.getElementById('viewport');
 
-    let isStarted = false;
+    let isIntroStarted = false;
 
-    // Interaction Function for Mobile & Desktop
-    const handleInteraction = (e) => {
-        if (isStarted) return;
-        isStarted = true;
-
+    // Intro control function (Tap support)
+    function startIntro() {
+        if (isIntroStarted) return;
+        isIntroStarted = true;
         tapMsg.style.display = 'none';
         video.style.display = 'block';
-
-        video.play().catch(err => {
-            console.log("Video skip: ", err);
-            showBoard();
-        });
-    };
-
-    splash.addEventListener('click', handleInteraction);
-    splash.addEventListener('touchstart', (e) => {
-        e.preventDefault();
-        handleInteraction();
-    }, {passive: false});
-
-    video.onended = showBoard;
+        video.play().catch(e => showBoard());
+    }
 
     function showBoard() {
         splash.style.transition = "opacity 0.6s ease";
@@ -245,11 +164,11 @@
         setTimeout(() => {
             splash.style.display = "none";
             viewport.style.visibility = "visible";
-            generateRoad(); // Trigger original board logic
+            generateRoad(); // Road initialization function
         }, 600);
     }
 
-    // --- YOUR ORIGINAL BOARD SCRIPT (UNTOUCHED) ---
+    // --- ORIGINAL BOARD LOGIC ---
     const board = document.getElementById('board-rectangle');
     const winBox = document.getElementById('win-box');
     const underLayer = document.getElementById('under-layer');
@@ -268,8 +187,7 @@
     };
 
     function generateRoad() {
-        let x = 65 - (TILE / 2);
-        let y = 272; 
+        let x = 65 - (TILE / 2), y = 272; 
         function addMove(dir, count) {
             for (let i = 0; i < count; i++) {
                 pathArr.push({ x, y });
@@ -294,7 +212,7 @@
             const tile = document.createElement('div');
             tile.className = 'tile';
             if (!pairMap[num]) {
-                tile.style.backgroundColor = '#f1c40f'; // Bright Yellow
+                tile.style.backgroundColor = '#f1c40f'; 
                 tile.style.border = '1px solid #d4ac0d';
             } else {
                 if ([7, 15, 31, 47, 84, 100, 170, 181, 218, 226, 254, 258].includes(num)) tile.className += ' portal-tunnel';
@@ -304,11 +222,8 @@
                 if ([128, 143, 237, 250].includes(num)) tile.className += ' portal-rail';
                 if ([150, 158].includes(num)) tile.className += ' portal-teleport';
             }
-
             tile.style.left = pos.x + 'px'; tile.style.top = pos.y + 'px';
-            if (pairMap[num]) {
-                tile.innerText = pairMap[num];
-            }
+            if (pairMap[num]) tile.innerText = pairMap[num];
             board.appendChild(tile);
         });
         
@@ -316,26 +231,23 @@
         const winLeft = last.x + TILE;
         winBox.style.left = winLeft + 'px'; 
         winBox.style.top = (last.y - 39) + 'px';
-        board.style.width = (winLeft + 110 + 10) + 'px';
         
+        // Board width exactly winning point ke corner tak (plus chota margin)
+        board.style.width = (winLeft + 110 + 10) + 'px';
         setupGraphics();
     }
 
     function createPathString(d, type) {
         if (type === 'tunnel') return `<path d="${d}" class="pipe-outline"/><path d="${d}" class="pipe-silver"/>`;
         if (type === 'river') {
-            let riverGrass = `<path d="${d}" class="river-base" style="stroke:#27ae60; stroke-width:40px; opacity:0.3; stroke-dasharray:5,20;"/>`;
+            let grass = `<path d="${d}" class="river-base" style="stroke:#27ae60; stroke-width:40px; opacity:0.3; stroke-dasharray:5,20;"/>`;
             let fish = '';
             for(let i=0; i<8; i++) {
                 let icon = (i % 2 === 0) ? '🐟' : '🐠'; 
                 fish += `<g><animateMotion dur="${7+Math.random()*3}s" repeatCount="indefinite" rotate="auto" path="${d}" begin="${i*1.5}s"/><text class="fish-tiny" text-anchor="middle" dominant-baseline="middle">${icon}</text></g>`;
             }
-            let waves = `
-                <path d="${d}" class="wave-layer" style="stroke-width:4px; stroke-dasharray:20,30; animation-duration:5s; opacity: 0.3;"/>
-                <path d="${d}" class="wave-layer" style="stroke-width:2px; stroke-dasharray:50,50; animation-duration:8s; opacity: 0.2;"/>
-                <path d="${d}" class="wave-layer" style="stroke-width:1px; stroke-dasharray:10,90; animation-duration:4s; opacity: 0.4;"/>
-            `;
-            return riverGrass + `<path d="${d}" class="river-base"/><g class="fish-group">${fish}</g>${waves}`;
+            let waves = `<path d="${d}" class="wave-layer" style="stroke-width:4px; stroke-dasharray:20,30; animation-duration:5s; opacity: 0.3;"/><path d="${d}" class="wave-layer" style="stroke-width:2px; stroke-dasharray:50,50; animation-duration:8s; opacity: 0.2;"/><path d="${d}" class="wave-layer" style="stroke-width:1px; stroke-dasharray:10,90; animation-duration:4s; opacity: 0.4;"/>`;
+            return grass + `<path d="${d}" class="river-base"/><g class="fish-group">${fish}</g>${waves}`;
         }
         if (type === 'road') return `<path d="${d}" class="road-base"/><path d="${d}" class="road-lines"/>`;
         if (type === 'rail') return `<path d="${d}" class="rail-bed"/><path d="${d}" class="rail-tracks"/>`;
@@ -347,73 +259,78 @@
         const div = document.createElement('div');
         div.className = 'stationary-icon';
         div.style.left = x + 'px'; div.style.top = y + 'px';
-        div.style.transform = transform;
-        div.innerHTML = html;
+        div.style.transform = transform; div.innerHTML = html;
         iconsContainer.appendChild(div);
     }
 
     function setupGraphics() {
         const p = (i) => pathArr[i-1];
         let uH = "", mH = "", tH = "";
-
-        // Bottom Layer
-        uH += createPathString(`M ${p(60).x+TILE} ${p(60).y+TILE/2} C ${p(60).x+TILE+100} ${p(60).y+TILE/2}, ${p(71).x+TILE/2} ${p(71).y+TILE+100}, ${p(71).x+TILE/2} ${p(71).y+TILE}`, 'galaxy');
-        uH += createPathString(`M ${p(122).x+TILE} ${p(122).y+TILE/2} C ${p(122).x+TILE+180} ${p(122).y+TILE/2}, ${p(136).x+TILE+180} ${p(136).y+TILE/2}, ${p(136).x+TILE} ${p(136).y+TILE/2}`, 'galaxy');
-        uH += createPathString(`M ${p(190).x+TILE} ${p(190).y+TILE/2} C ${p(190).x+TILE+120} ${p(190).y+TILE/2}, ${p(203).x+TILE/2} ${p(203).y-120}, ${p(203).x+TILE/2} ${p(203).y}`, 'galaxy');
-
-        // Middle Layer
-        mH += createPathString(`M ${p(7).x+TILE} ${p(7).y+TILE/2} C ${p(7).x+100} ${p(7).y+TILE/2}, ${p(15).x+TILE/2} ${p(15).y+100}, ${p(15).x+TILE/2} ${p(15).y+TILE}`, 'tunnel');
-        mH += createPathString(`M ${p(31).x+TILE/2} ${p(31).y+TILE} C ${p(31).x+TILE/2} ${p(31).y+110}, ${p(47).x+TILE/2} ${p(47).y-80}, ${p(47).x+TILE/2} ${p(47).y}`, 'tunnel');
-        mH += createPathString(`M ${p(44).x+TILE/2} ${p(44).y+TILE} C ${p(44).x+TILE/2} ${p(44).y+80}, ${p(53).x+TILE/2} ${p(53).y+80}, ${p(53).x+TILE/2} ${p(53).y+TILE}`, 'road');
-        mH += createPathString(`M ${p(84).x+TILE/2} ${p(84).y+TILE} C ${p(84).x+TILE/2} ${p(84).y+TILE+60}, ${p(100).x+TILE/2} ${p(100).y-60}, ${p(100).x+TILE/2} ${p(100).y}`, 'tunnel');
-        mH += createPathString(`M ${p(106).x+TILE/2} ${p(106).y} C ${p(106).x+TILE/2} ${p(106).y-60}, ${p(114).x-60} ${p(114).y+TILE/2}, ${p(114).x} ${p(114).y+TILE/2}`, 'road');
-        mH += createPathString(`M ${p(128).x+TILE/2} ${p(128).y+TILE} C ${p(128).x+TILE/2} ${p(128).y+TILE+80}, ${p(143).x-80} ${p(143).y+TILE/2}, ${p(143).x} ${p(143).y+TILE/2}`, 'rail');
-        mH += createPathString(`M ${p(170).x+TILE/2} ${p(170).y} C ${p(170).x+TILE/2} ${p(170).y-80}, ${p(181).x+TILE/2} ${p(181).y+TILE+80}, ${p(181).x+TILE/2} ${p(181).y+TILE}`, 'tunnel');
-        mH += createPathString(`M ${p(184).x+TILE/2} ${p(184).y+TILE} C ${p(184).x+TILE/2} ${p(184).y+TILE+80}, ${p(195).x-80} ${p(195).y+TILE/2}, ${p(195).x} ${p(195).y+TILE/2}`, 'road');
-        mH += createPathString(`M ${p(218).x+TILE/2} ${p(218).y} C ${p(218).x+TILE/2} ${p(218).y-80}, ${p(226).x+TILE/2} ${p(226).y-80}, ${p(226).x+TILE/2} ${p(226).y}`, 'tunnel');
-        mH += createPathString(`M ${p(232).x+TILE/2} ${p(232).y} C ${p(232).x+TILE/2} ${p(232).y-80}, ${p(242).x-80} ${p(242).y+TILE/2}, ${p(242).x} ${p(242).y+TILE/2}`, 'road');
-        mH += createPathString(`M ${p(237).x+TILE} ${p(237).y+TILE/2} C ${p(237).x+TILE+100} ${p(237).y+TILE/2}, ${p(250).x+TILE/2} ${p(250).y+TILE+100}, ${p(250).x+TILE/2} ${p(250).y+TILE}`, 'rail');
-        mH += createPathString(`M ${p(254).x+TILE/2} ${p(254).y+TILE} C ${p(254).x+TILE/2} ${p(254).y+TILE+80}, ${p(258).x+TILE/2} ${p(258).y+TILE+80}, ${p(258).x+TILE/2} ${p(258).y+TILE}`, 'tunnel');
-
-        // Top Layer
-        tH += createPathString(`M ${p(24).x} ${p(24).y+TILE/2} C ${p(24).x-80} ${p(24).y+TILE/2}, ${p(35).x+TILE/2} ${p(35).y-80}, ${p(35).x+TILE/2} ${p(35).y}`, 'river');
-        tH += createPathString(`M ${p(77).x+TILE/2} ${p(77).y+TILE} C ${p(77).x+TILE/2} ${p(77).y+120}, ${p(92).x+TILE+120} ${p(92).y+TILE/2}, ${p(92).x+TILE} ${p(92).y+TILE/2}`, 'river');
-        tH += createPathString(`M ${p(164).x} ${p(164).y+TILE/2} C ${p(164).x-120} ${p(164).y+TILE/2}, ${p(173).x+TILE/2} ${p(173).y+TILE+120}, ${p(173).x+TILE/2} ${p(173).y+TILE}`, 'river');
-        tH += createPathString(`M ${p(199).x+TILE} ${p(199).y+TILE/2} C ${p(199).x+TILE+100} ${p(199).y+TILE/2}, ${p(211).x-100} ${p(211).y+TILE/2}, ${p(211).x} ${p(211).y+TILE/2}`, 'river');
-
+        uH += createPathString(`M ${p(60).x+TILE} ${p(60).y+16} C ${p(60).x+132} ${p(60).y+16}, ${p(71).x+16} ${p(71).y+132}, ${p(71).x+16} ${p(71).y+TILE}`, 'galaxy');
+        uH += createPathString(`M ${p(122).x+TILE} ${p(122).y+16} C ${p(122).x+212} ${p(122).y+16}, ${p(136).x+212} ${p(136).y+16}, ${p(136).x+TILE} ${p(136).y+16}`, 'galaxy');
+        uH += createPathString(`M ${p(190).x+TILE} ${p(190).y+16} C ${p(190).x+152} ${p(190).y+16}, ${p(203).x+16} ${p(203).y-120}, ${p(203).x+16} ${p(203).y}`, 'galaxy');
+        mH += createPathString(`M ${p(7).x+TILE} ${p(7).y+16} C ${p(7).x+100} ${p(7).y+16}, ${p(15).x+16} ${p(15).y+100}, ${p(15).x+16} ${p(15).y+TILE}`, 'tunnel');
+        mH += createPathString(`M ${p(31).x+16} ${p(31).y+TILE} C ${p(31).x+16} ${p(31).y+110}, ${p(47).x+16} ${p(47).y-80}, ${p(47).x+16} ${p(47).y}`, 'tunnel');
+        mH += createPathString(`M ${p(44).x+16} ${p(44).y+TILE} C ${p(44).x+16} ${p(44).y+80}, ${p(53).x+16} ${p(53).y+80}, ${p(53).x+16} ${p(53).y+TILE}`, 'road');
+        mH += createPathString(`M ${p(84).x+16} ${p(84).y+TILE} C ${p(84).x+16} ${p(84).y+92}, ${p(100).x+16} ${p(100).y-60}, ${p(100).x+16} ${p(100).y}`, 'tunnel');
+        mH += createPathString(`M ${p(106).x+16} ${p(106).y} C ${p(106).x+16} ${p(106).y-60}, ${p(114).x-60} ${p(114).y+16}, ${p(114).x} ${p(114).y+16}`, 'road');
+        mH += createPathString(`M ${p(128).x+16} ${p(128).y+TILE} C ${p(128).x+16} ${p(128).y+112}, ${p(143).x-80} ${p(143).y+16}, ${p(143).x} ${p(143).y+16}`, 'rail');
+        mH += createPathString(`M ${p(170).x+16} ${p(170).y} C ${p(170).x+16} ${p(170).y-80}, ${p(181).x+16} ${p(181).y+112}, ${p(181).x+16} ${p(181).y+TILE}`, 'tunnel');
+        mH += createPathString(`M ${p(184).x+16} ${p(184).y+TILE} C ${p(184).x+16} ${p(184).y+112}, ${p(195).x-80} ${p(195).y+16}, ${p(195).x} ${p(195).y+16}`, 'road');
+        mH += createPathString(`M ${p(218).x+16} ${p(218).y} C ${p(218).x+16} ${p(218).y-80}, ${p(226).x+16} ${p(226).y-80}, ${p(226).x+16} ${p(226).y}`, 'tunnel');
+        mH += createPathString(`M ${p(232).x+16} ${p(232).y} C ${p(232).x+16} ${p(232).y-80}, ${p(242).x-80} ${p(242).y+16}, ${p(242).x} ${p(242).y+16}`, 'road');
+        mH += createPathString(`M ${p(237).x+TILE} ${p(237).y+16} C ${p(237).x+132} ${p(237).y+16}, ${p(250).x+16} ${p(250).y+132}, ${p(250).x+16} ${p(250).y+TILE}`, 'rail');
+        mH += createPathString(`M ${p(254).x+16} ${p(254).y+TILE} C ${p(254).x+16} ${p(254).y+112}, ${p(258).x+16} ${p(258).y+112}, ${p(258).x+16} ${p(258).y+TILE}`, 'tunnel');
+        tH += createPathString(`M ${p(24).x} ${p(24).y+16} C ${p(24).x-80} ${p(24).y+16}, ${p(35).x+16} ${p(35).y-80}, ${p(35).x+16} ${p(35).y}`, 'river');
+        tH += createPathString(`M ${p(77).x+16} ${p(77).y+TILE} C ${p(77).x+16} ${p(77).y+120}, ${p(92).x+152} ${p(92).y+16}, ${p(92).x+TILE} ${p(92).y+16}`, 'river');
+        tH += createPathString(`M ${p(164).x} ${p(164).y+16} C ${p(164).x-120} ${p(164).y+16}, ${p(173).x+16} ${p(173).y+152}, ${p(173).x+16} ${p(173).y+TILE}`, 'river');
+        tH += createPathString(`M ${p(199).x+TILE} ${p(199).y+16} C ${p(199).x+132} ${p(199).y+16}, ${p(211).x-100} ${p(211).y+16}, ${p(211).x} ${p(211).y+16}`, 'river');
+        
         underLayer.innerHTML = uH; middleLayer.innerHTML = mH; topLayer.innerHTML = tH;
-
         const bSVG = `<svg viewBox="0 0 100 60"><path d="M10 40 L90 40 L80 60 L20 60 Z" fill="#8d6e63" stroke="#5d4037" stroke-width="2"/><path d="M50 40 L50 10 L75 25 Z" fill="#eeeeee" stroke="#333" stroke-width="1"/></svg>`;
         const b6SVG = `<svg viewBox="0 0 100 60"><path d="M10 40 L90 40 L80 60 L20 60 Z" fill="#8d6e63" stroke="#5d4037" stroke-width="2"/><path d="M50 40 L50 10 L25 25 Z" fill="#eeeeee" stroke="#333" stroke-width="1"/></svg>`;
-        
-        addIcon(p(24).x-18, p(24).y+2, bSVG); 
-        addIcon(p(77).x+2, p(77).y+TILE+2, b6SVG, "rotate(90deg)"); 
+        addIcon(p(24).x-18, p(24).y+2, bSVG); addIcon(p(77).x+2, p(77).y+TILE+2, b6SVG, "rotate(90deg)"); 
     }
 
+    // --- DRAGGING LOGIC (WITH BOUNDARY FIX) ---
     let isDragging = false, currX = 0, lastX = 0;
-    const getX = (e) => e.touches ? e.touches[0].pageX : e.pageX;
-    viewport.onmousedown = (e) => { isDragging = true; lastX = getX(e); };
-    window.onmousemove = (e) => {
+    const getXPos = (e) => e.touches ? e.touches[0].pageX : e.pageX;
+
+    const startDrag = (e) => { 
+        isDragging = true; 
+        lastX = getXPos(e); 
+    };
+
+    const moveDrag = (e) => {
         if (!isDragging) return;
-        const x = getX(e);
+        const x = getXPos(e);
         const dx = x - lastX;
+        
+        // Boundaries calculate karo
+        // 0: Left se aage nahi ja sakte
+        // maxScroll: Winning point ke corner se aage nahi ja sakte
         const maxScroll = window.innerWidth - board.offsetWidth;
-        currX = Math.min(0, Math.max(maxScroll, currX + dx));
+        
+        // Agla move calculate karo par boundaries ke beech restrict karo
+        let nextX = currX + dx;
+        if (nextX > 0) nextX = 0;
+        if (nextX < maxScroll) nextX = maxScroll;
+
+        currX = nextX;
         board.style.transform = `translateX(${currX}px)`;
         lastX = x;
     };
-    window.onmouseup = () => isDragging = false;
-    viewport.ontouchstart = (e) => { isDragging = true; lastX = getX(e); };
-    window.ontouchmove = (e) => {
-        if (!isDragging) return;
-        const x = getX(e);
-        const dx = x - lastX;
-        const maxScroll = window.innerWidth - board.offsetWidth;
-        currX = Math.min(0, Math.max(maxScroll, currX + dx));
-        board.style.transform = `translateX(${currX}px)`;
-        lastX = x;
-    };
-    window.ontouchend = () => isDragging = false;
+
+    const endDrag = () => { isDragging = false; };
+
+    // Events listeners (Using pointer events for better tap support)
+    window.addEventListener('pointerdown', (e) => {
+        if (viewport.contains(e.target) || board.contains(e.target)) startDrag(e);
+    });
+    window.addEventListener('pointermove', moveDrag);
+    window.addEventListener('pointerup', endDrag);
+
 </script>
 </body>
 </html>
+
