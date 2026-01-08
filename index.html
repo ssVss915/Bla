@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ludo Master - Precision Control</title>
+    <style>
+        :root {
+            --tile-size: 32px; 
+            --start-color: #27ae60;
+            --win-color: #c0392b;
+            --board-height: 420px;
+            --box-size: 110px; 
+            --edge-gap: 10px;   
+        }
+
+        body {
+            margin: 0; padding: 0; 
+            background: linear-gradient(135deg, #4A00E0 0%, #8E2DE2 100%);
+            height: 100vh;
+            display: flex; justify-content: center; align-items: center;
+            overflow: hidden; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            touch-action: none; -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+
+        /* --- LAYERS --- */
+        #splash-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, #4A00E0 0%, #8E2DE2 100%);
+            z-index: 3000; 
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer;
+        }
+        
+        #tap-msg {
+            color: #fff; font-size: 28px; 
+            background: linear-gradient(to right, #ff416c, #ff4b2b);
+            padding: 20px 60px; border-radius: 50px; 
+            font-weight: 900; letter-spacing: 2px;
+            box-shadow: 0 10px 25px rgba(255, 75, 43, 0.5);
+            animation: heartbeat 1.5s infinite;
+            border: 4px solid white;
+            text-transform: uppercase;
+        }
+
+        @keyframes heartbeat { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+
+        #intro-video {
+            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover;
+        }
+
+        /* --- WIN OVERLAY --- */
+        #win-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 2500;
+            display: none; flex-direction: column;
+            justify-content: center; align-items: center;
+            backdrop-filter: blur(8px);
+            animation: fadeIn 0.5s;
+        }
+        @keyframes fadeIn { from {opacity:0} to {opacity:1} }
+        
+        .winner-text {
+            font-size: 40px; color: #f1c40f; text-shadow: 0 0 20px #f1c40f;
+            margin-bottom: 30px; text-align: center; font-weight: 900;
+            animation: bounceIn 1s;
+        }
+        @keyframes bounceIn { 0%{transform:scale(0)} 60%{transform:scale(1.2)} 100%{transform:scale(1)} }
+
+        .win-btn {
+            padding: 15px 40px; font-size: 20px; margin: 10px;
+            border-radius: 50px; border: none; font-weight: bold; cursor: pointer;
+            width: 200px; transition: transform 0.1s;
+        }
+        .btn-replay { background: linear-gradient(to right, #00b09b, #96c93d); color: white; box-shadow: 0 5px 15px rgba(0,176,155,0.4); }
+        .btn-menu { background: linear-gradient(to right, #ff5f6d, #ffc371); color: white; box-shadow: 0 5px 15px rgba(255,95,109,0.4); }
+        .win-btn:active { transform: scale(0.95); }
+
+        /* --- MENU --- */
+        #menu-layer {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(135deg, #4A00E0 0%, #8E2DE2 100%);
+            z-index: 1500;
+            display: none; flex-direction: column;
+            justify-content: center; align-items: center; color: white;
+        }
+        
+        .menu-container {
+            width: 100%; max-width: 400px; padding: 20px;
+            text-align: center; display: flex; flex-direction: column; align-items: center;
+        }
+
+        #mode-select-screen { display: flex; flex-direction: column; width: 100%; align-items: center; }
+
+        .mode-btn {
+            width: 80%; padding: 25px; margin-bottom: 20px; 
+            font-size: 22px; font-weight: 900; color: white; border: none;
+            border-radius: 20px; cursor: pointer; transition: 0.2s;
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+        
+        .mode-btn:nth-child(1) { background: linear-gradient(to right, #00c6ff, #0072ff); box-shadow: 0 10px 20px rgba(0, 114, 255, 0.4); }
+        .mode-btn:nth-child(2) { background: linear-gradient(to right, #f857a6, #ff5858); box-shadow: 0 10px 20px rgba(248, 87, 166, 0.4); margin-bottom: 0; }
+        .mode-btn:active { transform: scale(0.95); }
+
+        #count-screen, #color-screen {
+            background: rgba(255, 255, 255, 0.15); padding: 30px; border-radius: 25px;
+            border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 10px 30px rgba(0,0,0,0.3); width: 85%;
+        }
+
+        .color-row { display: flex; gap: 15px; justify-content: center; margin: 25px 0; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 50px; }
+        .color-dot {
+            width: 45px; height: 45px; border-radius: 50%; 
+            border: 3px solid rgba(255,255,255,0.5); cursor: pointer;
+            transition: transform 0.2s; position: relative;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .color-dot.selected { opacity: 0.3; transform: scale(0.8); cursor: default; filter: grayscale(0.8); }
+        .dot-label {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-size: 14px; color: white; font-weight: bold; pointer-events: none;
+            text-shadow: 0 1px 2px black; display: none;
+        }
+        .color-dot.selected .dot-label { display: block; }
+
+        /* --- MINIMAP HUD --- */
+        #minimap-wrapper {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            width: 200px; height: 80px;
+            background: rgba(0, 0, 0, 0.6); 
+            border: 2px solid rgba(255,255,255,0.3); border-radius: 15px;
+            z-index: 1300; overflow: hidden; display: none;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3); cursor: grab;
+            backdrop-filter: blur(5px);
+        }
+        #minimap-wrapper:active { cursor: grabbing; }
+        #minimap-content { height: 100%; position: absolute; top: 0; left: 0; }
+        
+        .mm-path { fill: none; stroke: rgba(255,255,255,0.5); stroke-width: 8; stroke-linecap: round; stroke-linejoin: round; }
+        .mm-dot { r: 8; stroke: #fff; stroke-width: 2px; transition: cx 0.2s, cy 0.2s; }
+        .mm-start { fill: #2ecc71; r: 10; }
+        .mm-win { fill: #e74c3c; r: 10; }
+
+        /* --- HUD (DICE) --- */
+        #game-hud {
+            position: fixed; bottom: 10px; left: 0; width: 100%;
+            z-index: 1200; display: none;
+            flex-direction: column; align-items: center; justify-content: flex-end;
+            pointer-events: none; height: auto;
+        }
+        
+        #turn-panel {
+            pointer-events: auto;
+            display: flex; flex-direction: column; align-items: center;
+            background: rgba(255, 255, 255, 0.15); 
+            padding: 8px 30px; border-radius: 35px;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.2);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            margin-bottom: 5px;
+        }
+
+        #turn-msg {
+            color: #fff; font-size: 14px; margin-bottom: 8px; 
+            font-weight: 800; letter-spacing: 1px; text-transform: uppercase;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+        }
+
+        .scene { width: 60px; height: 60px; perspective: 600px; cursor: pointer; margin-bottom: 2px; }
+        .cube {
+            width: 100%; height: 100%; position: relative;
+            transform-style: preserve-3d;
+            transform: translateZ(-30px);
+            transition: transform 0.1s; 
+        }
+        .cube.rolling { animation: tumble 0.5s linear infinite; }
+        @keyframes tumble { 0% { transform: rotateX(0) rotateY(0); } 100% { transform: rotateX(360deg) rotateY(360deg); } }
+
+        .cube__face {
+            position: absolute; width: 60px; height: 60px;
+            background: #fff; border: 1px solid #ddd; border-radius: 10px;
+            display: flex; justify-content: center; align-items: center;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.05);
+        }
+        
+        .face--1 { transform: rotateY(  0deg) translateZ(30px); }
+        .face--2 { transform: rotateY( 90deg) translateZ(30px); }
+        .face--3 { transform: rotateY(180deg) translateZ(30px); }
+        .face--4 { transform: rotateY(-90deg) translateZ(30px); }
+        .face--5 { transform: rotateX( 90deg) translateZ(30px); }
+        .face--6 { transform: rotateX(-90deg) translateZ(30px); }
+
+        .dot { width: 12px; height: 12px; background: #333; border-radius: 50%; position: absolute; box-shadow: inset 1px 1px 2px rgba(0,0,0,0.3); }
+        .face--1 .dot:nth-child(1) { width: 18px; height: 18px; background: #e74c3c; } 
+        .face--2 .dot:nth-child(1) { top: 10px; left: 10px; } .face--2 .dot:nth-child(2) { bottom: 10px; right: 10px; }
+        .face--3 .dot:nth-child(1) { top: 10px; left: 10px; } .face--3 .dot:nth-child(2) { top: 50%; left: 50%; transform: translate(-50%,-50%); } .face--3 .dot:nth-child(3) { bottom: 10px; right: 10px; }
+        .face--4 .dot:nth-child(1) { top: 10px; left: 10px; } .face--4 .dot:nth-child(2) { top: 10px; right: 10px; } .face--4 .dot:nth-child(3) { bottom: 10px; left: 10px; } .face--4 .dot:nth-child(4) { bottom: 10px; right: 10px; }
+        .face--5 .dot:nth-child(1) { top: 10px; left: 10px; } .face--5 .dot:nth-child(2) { top: 10px; right: 10px; } .face--5 .dot:nth-child(3) { bottom: 10px; left: 10px; } .face--5 .dot:nth-child(4) { bottom: 10px; right: 10px; } .face--5 .dot:nth-child(5) { top: 50%; left: 50%; transform: translate(-50%,-50%); }
+        .face--6 .dot:nth-child(1) { top: 8px; left: 10px; } .face--6 .dot:nth-child(2) { top: 8px; right: 10px; } .face--6 .dot:nth-child(3) { top: 50%; left: 10px; transform: translateY(-50%); } .face--6 .dot:nth-child(4) { top: 50%; right: 10px; transform: translateY(-50%); } .face--6 .dot:nth-child(5) { bottom: 8px; left: 10px; } .face--6 .dot:nth-child(6) { bottom: 8px; right: 10px; }
+
+        /* --- BOARD --- */
+        #viewport {
+            width: 100vw; height: 100vh;
+            display: flex; align-items: center; overflow: visible;
+            position: relative; cursor: grab; perspective: 1000px;
+            visibility: hidden;
+        }
+        #viewport:active { cursor: grabbing; }
+
+        #board-rectangle {
+            position: absolute; left: 0; height: var(--board-height);
+            background-color: #aed581;
+            background-image: radial-gradient(#9ccc65 0.5px, transparent 0.5px), 
+                              radial-gradient(#dcedc8 0.5px, #aed581 0.5px);
+            background-size: 10px 10px;
+            border: 8px solid #5d4037; border-radius: 8px;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+            transform: translateX(0px); will-change: transform;
+            z-index: 10;
+        }
+
+        #start-box, #win-box {
+            position: absolute; width: var(--box-size); height: var(--box-size);
+            background: #fff; border-radius: 12px; border: 4px solid;
+            z-index: 20; box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+        }
+        #start-box { bottom: var(--edge-gap); left: var(--edge-gap); border-color: var(--start-color); color: var(--start-color); }
+        #win-box { top: var(--edge-gap); border-color: var(--win-color); color: var(--win-color); }
+        
+        .start-label { position: absolute; top: 5px; width: 100%; text-align: center; font-size: 10px; font-weight: 800; pointer-events: none; }
+        .win-label { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; font-size: 11px; font-weight: 800; pointer-events: none; }
+
+        .tile { position: absolute; width: var(--tile-size); height: var(--tile-size); background: white; border: 1px solid #ddd; box-sizing: border-box; display: flex; justify-content: center; align-items: center; z-index: 15; font-size: 11px; font-weight: bold; color: #d35400; }
+        
+        .portal-tunnel { background: radial-gradient(circle, #fff 10%, #bdc3c7 100%) !important; border: 2px solid #333 !important; }
+        .portal-river { background: radial-gradient(circle, #fff 10%, #a2d2ff 100%) !important; border: 3px solid #3498db !important; }
+        .portal-galaxy { background: radial-gradient(circle, #2d3436 10%, #6c5ce7 100%) !important; border: 2px solid #a29bfe !important; }
+        .portal-road { background: radial-gradient(circle, #fff 10%, #95a5a6 100%) !important; border: 2px solid #2c3e50 !important; }
+        .portal-rail { background: repeating-linear-gradient(45deg, #fff, #fff 5px, #dfe6e9 5px, #dfe6e9 10px) !important; border: 2px solid #2d3436 !important; }
+
+        .pawn {
+            width: 28px; height: 28px; border-radius: 50%;
+            border: 3px solid #fff; position: absolute; 
+            z-index: 200; 
+            box-shadow: 0 5px 10px rgba(0,0,0,0.5), inset 0 0 5px rgba(0,0,0,0.3);
+            display: flex; justify-content: center; align-items: center;
+            font-size: 13px; color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+            font-weight: 900;
+            transition: transform 0.1s;
+        }
+        
+        .pawn::after {
+            content: ''; position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px;
+            border-radius: 50%; box-shadow: 0 0 10px currentColor; opacity: 0.7;
+        }
+
+        .pawn.active-turn { z-index: 300; border-color: #fff; transform: scale(1.2); }
+        .pawn.active-turn::before {
+            content: ''; position: absolute;
+            top: -60%; left: -60%; width: 220%; height: 220%;
+            border-radius: 50%; border: 3px solid #00ffff;
+            animation: pulseRing 1s infinite ease-out;
+            opacity: 1;
+        }
+        .pawn.unlocked-in-box::after {
+            content: ''; position: absolute; top: -10px; left: -10px; right: -10px; bottom: -10px;
+            border: 2px dashed #ffff00; border-radius: 50%;
+            animation: spin 3s linear infinite; opacity: 1;
+        }
+
+        @keyframes pulseRing { 0% { transform: scale(0.6); opacity: 1; border-width: 3px; } 100% { transform: scale(1.4); opacity: 0; border-width: 0px; } }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        #graphics-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 12; }
+        
+        .pipe-outline { fill: none; stroke: #333; stroke-width: 24; stroke-linecap: round; }
+        .pipe-silver { fill: none; stroke: #c0c0c0; stroke-width: 20; stroke-linecap: round; }
+        .river-base { fill: none; stroke: #3498db; stroke-width: 32; stroke-linecap: round; filter: url(#waterDistort); }
+        .river-grass { fill: none; stroke: #27ae60; stroke-width: 40; stroke-linecap: round; opacity: 0.3; stroke-dasharray: 5,20; }
+        .wave-layer { fill: none; stroke: rgba(255,255,255,0.4); stroke-linecap: round; animation: moveOcean linear infinite; }
+        @keyframes moveOcean { from { stroke-dashoffset: 400; } to { stroke-dashoffset: 0; } }
+        .fish-tiny { font-size: 5px; opacity: 0.5; font-family: 'Segoe UI Emoji', sans-serif; }
+        .fish-group { filter: url(#waterDistort); }
+        .road-base { fill: none; stroke: #2c3e50; stroke-width: 24; stroke-linecap: round; }
+        .road-lines { fill: none; stroke: #f1c40f; stroke-width: 2px; stroke-dasharray: 8, 12; stroke-linecap: round; }
+        .rail-bed { fill: none; stroke: #636e72; stroke-width: 14; stroke-linecap: round; }
+        .rail-tracks { fill: none; stroke: #2d3436; stroke-width: 8; stroke-dasharray: 2, 6; }
+        .galaxy-base { fill: none; stroke: #4834d4; stroke-width: 20; stroke-linecap: round; filter: blur(4px); opacity: 0.6; }
+        .galaxy-core { fill: none; stroke: #686de0; stroke-width: 12; stroke-linecap: round; }
+        .galaxy-stars { fill: none; stroke: #ffffff; stroke-width: 2; stroke-dasharray: 2, 20; animation: moveStars 4s linear infinite; }
+        @keyframes moveStars { from { stroke-dashoffset: 200; } to { stroke-dashoffset: 0; } }
+
+        .num-btn { background: #7f8c8d; border: none; padding: 12px 20px; border-radius: 10px; font-weight: bold; cursor: pointer; margin: 0 8px; color: #fff; font-size: 16px; transition: 0.2s; }
+        .num-btn.selected { background: #e67e22; transform: scale(1.1); box-shadow: 0 0 15px rgba(230, 126, 34, 0.5); }
+        .start-btn { background: #27ae60; color: white; font-size: 20px; border: none; padding: 15px 30px; border-radius: 50px; margin-top: 25px; width: 100%; cursor: pointer; font-weight: 900; box-shadow: 0 6px 0 #1e8449; }
+        .start-btn:active { transform: translateY(4px); box-shadow: none; }
+
+        #pawns-on-board { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 200; }
+    </style>
+</head>
+<body>
+
+<!-- SPLASH LAYER -->
+<div id="splash-overlay" onclick="startIntro()">
+    <div id="tap-msg">TAP TO START</div>
+    <video id="intro-video" playsinline preload="auto" onended="showMenu()" onerror="showMenu()">
+        <source src="intro.mp4" type="video/mp4">
+    </video>
+</div>
+
+<!-- WIN OVERLAY -->
+<div id="win-overlay">
+    <div class="winner-text" id="winner-text">PLAYER 1 WINS!</div>
+    <button class="win-btn btn-replay" onclick="resetGame()">PLAY AGAIN</button>
+    <button class="win-btn btn-menu" onclick="returnToMenu()">MAIN MENU</button>
+</div>
+
+<!-- MENU LAYER -->
+<div id="menu-layer">
+    <div class="menu-container">
+        
+        <div id="mode-select-screen">
+            <button class="mode-btn" onclick="initSetup('computer')">VS COMPUTER</button>
+            <button class="mode-btn" onclick="initSetup('friends')">WITH FRIENDS</button>
+        </div>
+
+        <div id="count-screen" style="display:none;">
+            <p style="color:#f1c40f; font-size:18px; margin-bottom:20px; font-weight:bold; text-transform:uppercase;">HOW MANY PLAYERS?</p>
+            <div style="margin-bottom:30px;">
+                <button class="num-btn" onclick="setCount(2)">2</button>
+                <button class="num-btn" onclick="setCount(3)">3</button>
+                <button class="num-btn" onclick="setCount(4)">4</button>
+                <button class="num-btn" onclick="setCount(5)">5</button>
+            </div>
+            <button class="start-btn" onclick="goToColors()">NEXT</button>
+        </div>
+
+        <div id="color-screen" style="display:none;">
+            <p id="picker-status" style="color:#f1c40f; font-size:18px; font-weight:bold; text-transform:uppercase;">PLAYER 1: PICK COLOR</p>
+            <div class="color-row">
+                <div class="color-dot" style="background:#e74c3c" onclick="pickColor('#e74c3c', this)"><span class="dot-label"></span></div>
+                <div class="color-dot" style="background:#2ecc71" onclick="pickColor('#2ecc71', this)"><span class="dot-label"></span></div>
+                <div class="color-dot" style="background:#ff69b4" onclick="pickColor('#ff69b4', this)"><span class="dot-label"></span></div>
+                <div class="color-dot" style="background:#f1c40f" onclick="pickColor('#f1c40f', this)"><span class="dot-label"></span></div>
+                <div class="color-dot" style="background:#3498db" onclick="pickColor('#3498db', this)"><span class="dot-label"></span></div>
+            </div>
+            <button id="final-start-btn" class="start-btn" style="display:none; background:#2980b9;" onclick="startGame()">START GAME</button>
+        </div>
+    </div>
+</div>
+
+<!-- MINIMAP -->
+<div id="minimap-wrapper">
+    <svg id="minimap-content" preserveAspectRatio="xMinYMin meet">
+        <!-- Drawn dynamically -->
+    </svg>
+</div>
+
+<!-- GAME HUD -->
+<div id="game-hud">
+    <div id="turn-panel">
+        <div id="turn-msg">Player 1</div>
+        <div class="scene" onclick="manualRoll()">
+            <div class="cube" id="cube">
+                <div class="cube__face face--1"><div class="dot"></div></div>
+                <div class="cube__face face--2"><div class="dot"></div><div class="dot"></div></div>
+                <div class="cube__face face--3"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+                <div class="cube__face face--4"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+                <div class="cube__face face--5"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+                <div class="cube__face face--6"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+            </div>
+        </div>
+        <div style="font-size:10px; color:#ddd; font-weight:bold; letter-spacing:1px; margin-top:5px;">TAP TO ROLL</div>
+    </div>
+</div>
+
+<!-- BOARD -->
+<div id="viewport">
+    <div id="board-rectangle">
+        <div id="start-box">
+            <div class="start-label">STARTING<br>POINT</div>
+            <!-- Pawns placed absolutely here -->
+        </div>
+        <div id="win-box"><div class="win-label">WINNING<br>POINT</div></div>
+
+        <svg id="graphics-layer">
+            <defs>
+                <filter id="waterDistort">
+                    <feTurbulence type="fractalNoise" baseFrequency="0.03 0.08" numOctaves="3" result="noise" />
+                    <feDisplacementMap in="SourceGraphic" in2="noise" scale="5" />
+                </filter>
+            </defs>
+            <g id="under-layer"></g>
+            <g id="middle-layer"></g>
+            <g id="top-layer"></g>
+        </svg>
+        <div id="icons-container"></div>
+        <div id="pawns-on-board"></div>
+    </div>
+</div>
+
+<script>
+    // --- VARIABLES ---
+    const menuLayer = document.getElementById('menu-layer');
+    const viewport = document.getElementById('viewport');
+    const gameHud = document.getElementById('game-hud');
+    const board = document.getElementById('board-rectangle');
+    const cube = document.getElementById('cube');
+    const turnMsg = document.getElementById('turn-msg');
+    const minimapWrapper = document.getElementById('minimap-wrapper');
+    const minimapContent = document.getElementById('minimap-content');
+    const winOverlay = document.getElementById('win-overlay');
+    const winnerText = document.getElementById('winner-text');
+    
+    // Game State
+    let gameMode = 'friends';
+    let totalPlayers = 2;
+    let players = []; 
+    let currentPlayerIdx = 0;
+    let setupStep = 0; 
+    let assignedColors = [];
+    let isRolling = false;
+    let isAnimating = false;
+    let pathArr = [];
+    let consecutiveSixes = 0;
+
+    // --- SETUP FLOW ---
+    function startIntro() {
+        document.getElementById('tap-msg').style.display = 'none';
+        const vid = document.getElementById('intro-video');
+        vid.style.display = 'block';
+        vid.play().catch(() => showMenu());
+    }
+
+    function showMenu() {
+        document.getElementById('splash-overlay').style.display = 'none';
+        menuLayer.style.display = 'flex';
+        resetSetup();
+    }
+
+    function resetSetup() {
+        setupStep = 0;
+        assignedColors = [];
+        document.querySelectorAll('.color-dot').forEach(d => {
+            d.classList.remove('selected');
+            d.querySelector('.dot-label').innerText = '';
+        });
+        document.getElementById('final-start-btn').style.display = 'none';
+        document.getElementById('mode-select-screen').style.display = 'flex';
+        document.getElementById('count-screen').style.display = 'none';
+        document.getElementById('color-screen').style.display = 'none';
+    }
+
+    function initSetup(mode) {
+        gameMode = mode;
+        document.getElementById('mode-select-screen').style.display = 'none';
+        if(mode === 'computer') {
+             document.querySelector('#count-screen .num-btn:nth-child(2)').style.display = 'none';
+             document.querySelector('#count-screen .num-btn:nth-child(4)').style.display = 'none';
+        } else {
+             document.querySelectorAll('#count-screen .num-btn').forEach(b => b.style.display = 'inline-block');
+        }
+        document.getElementById('count-screen').style.display = 'block';
+        setCount(2); 
+    }
+
+    function setCount(n) {
+        totalPlayers = n;
+        document.querySelectorAll('.num-btn').forEach(b => b.classList.remove('selected'));
+        Array.from(document.querySelectorAll('.num-btn')).find(b => b.innerText == n).classList.add('selected');
+    }
+
+    function goToColors() {
+        document.getElementById('count-screen').style.display = 'none';
+        document.getElementById('color-screen').style.display = 'block';
+        updatePickerStatus();
+    }
+
+    function updatePickerStatus() {
+        const pickerText = document.getElementById('picker-status');
+        if (setupStep < totalPlayers) {
+            const who = (gameMode === 'computer' && setupStep > 0) ? `Computer ${setupStep}` : `Player ${setupStep + 1}`;
+            pickerText.innerText = `${who}: PICK COLOR`;
+        } else {
+            pickerText.innerText = "ALL SET!";
+            document.getElementById('final-start-btn').style.display = 'block';
+        }
+    }
+
+    function pickColor(color, el) {
+        if (el.classList.contains('selected')) return;
+        if (setupStep >= totalPlayers) return;
+
+        el.classList.add('selected');
+        const label = el.querySelector('.dot-label');
+        let pName = (gameMode === 'computer' && setupStep > 0) ? `C${setupStep}` : `P${setupStep+1}`;
+        label.innerText = pName;
+
+        assignedColors.push({
+            id: setupStep,
+            type: (gameMode === 'computer' && setupStep > 0) ? 'cpu' : 'human',
+            color: color,
+            name: pName,
+            pos: 0, 
+            hasStarted: false,
+            pawnEl: null,
+            mmPawnEl: null
+        });
+
+        setupStep++;
+        updatePickerStatus();
+
+        if (gameMode === 'computer' && setupStep < totalPlayers) {
+            setTimeout(autoPickCpuColor, 400);
+        }
+    }
+
+    function autoPickCpuColor() {
+        const dots = document.querySelectorAll('.color-dot:not(.selected)');
+        if(dots.length > 0) {
+            dots[Math.floor(Math.random() * dots.length)].click(); 
+        }
+    }
+
+    // --- GAME START ---
+    function startGame() {
+        players = assignedColors;
+        menuLayer.style.display = 'none';
+        viewport.style.visibility = 'visible';
+        gameHud.style.display = 'flex';
+        minimapWrapper.style.display = 'block';
+        
+        generateRoad();
+        renderPawns();
+        updateTurn();
+    }
+
+    // --- DICE & LOGIC ---
+    function updateTurn() {
+        const p = players[currentPlayerIdx];
+        turnMsg.innerText = `${p.type === 'cpu' ? 'Computer' : 'Player ' + (p.id+1)}'s Turn`;
+        turnMsg.style.color = p.color;
+        
+        document.querySelectorAll('.pawn').forEach(el => {
+            el.classList.remove('active-turn');
+            el.classList.remove('unlocked-in-box');
+        });
+        
+        if(p.pawnEl) {
+            p.pawnEl.classList.add('active-turn');
+            if(p.hasStarted && p.pos === 0) {
+                p.pawnEl.classList.add('unlocked-in-box');
+            }
+        }
+
+        // CPU Auto Roll with Retry Logic
+        if(p.type === 'cpu') {
+            setTimeout(() => {
+                // Retry mechanism to ensure it rolls
+                const tryRoll = () => {
+                    if(!isRolling && !isAnimating && players[currentPlayerIdx] === p) {
+                        rollDice(true);
+                    } else if (players[currentPlayerIdx] === p) {
+                        // Wait more if busy
+                        setTimeout(tryRoll, 500);
+                    }
+                };
+                tryRoll();
+            }, 1000); 
+        }
+    }
+
+    function manualRoll() {
+        const p = players[currentPlayerIdx];
+        if (p.type === 'human') rollDice(false);
+    }
+
+    function rollDice(isAuto) {
+        if (isRolling || isAnimating) return;
+        const p = players[currentPlayerIdx];
+        
+        if (p.type === 'cpu' && !isAuto) return; // Prevent human click
+        if (p.type === 'human' && isAuto) return;
+
+        isRolling = true;
+        
+        let roll = Math.ceil(Math.random() * 6);
+        if(!p.hasStarted && Math.random() > 0.5) roll = 6; 
+        
+        cube.classList.add('rolling');
+        
+        setTimeout(() => {
+            cube.classList.remove('rolling');
+            setFace(roll);
+            setTimeout(() => { handleMoveLogic(p, roll); }, 600); 
+        }, 500); 
+    }
+
+    function setFace(n) {
+        let x = 0, y = 0;
+        switch(n) {
+            case 1: x = 0; y = 0; break;
+            case 2: x = 0; y = -90; break;
+            case 3: x = 0; y = -180; break;
+            case 4: x = 0; y = 90; break;
+            case 5: x = -90; y = 0; break;
+            case 6: x = 90; y = 0; break;
+        }
+        x += 720; y += 720;
+        cube.style.transform = `translateZ(-30px) rotateX(${x}deg) rotateY(${y}deg)`;
+    }
+
+    async function handleMoveLogic(player, roll) {
+        try {
+            let isExtraTurn = false;
+            
+            if (roll === 6) {
+                consecutiveSixes++;
+                if (consecutiveSixes === 3) {
+                    showToast("Triple 6! Turn Lost!", "#c0392b");
+                    consecutiveSixes = 0;
+                    isRolling = false;
+                    nextTurn();
+                    return;
+                }
+                isExtraTurn = true;
+            } else {
+                consecutiveSixes = 0;
+            }
+
+            if (!player.hasStarted) {
+                if (roll === 6) {
+                    player.hasStarted = true;
+                    player.pos = 0; 
+                    showToast("UNLOCKED! ROLL AGAIN", "#27ae60");
+                    updateMinimapPawn(player);
+                    updateTurn();
+                } else {
+                    showToast("Need 6 to Start", "#f39c12");
+                    nextTurn();
+                }
+            } else {
+                const currentPos = player.pos;
+                const steps = roll;
+                const target = currentPos + steps;
+
+                if (target <= pathArr.length + 1) {
+                    await movePawnJump(player, steps);
+                    
+                    if (player.pos > pathArr.length) {
+                        playerWin(player);
+                        return;
+                    }
+
+                    if (isExtraTurn) {
+                        showToast("ROLL AGAIN!", "#27ae60");
+                        updateTurn();
+                    } else {
+                        nextTurn();
+                    }
+                } else {
+                    showToast("Cannot Move", "#7f8c8d");
+                    if (isExtraTurn) updateTurn(); else nextTurn();
+                }
+            }
+        } catch (e) {
+            console.error(e);
+            isRolling = false;
+            isAnimating = false;
+            nextTurn(); 
+        } finally {
+            isRolling = false;
+        }
+    }
+
+    function nextTurn() {
+        currentPlayerIdx = (currentPlayerIdx + 1) % players.length;
+        consecutiveSixes = 0;
+        updateTurn();
+    }
+
+    function showToast(msg, color="#fff") {
+        const t = document.getElementById('turn-msg');
+        t.innerText = msg;
+        t.style.color = color;
+        setTimeout(() => {
+             const p = players[currentPlayerIdx];
+             let name = p.type === 'cpu' ? 'Computer' : `Player ${p.id+1}`;
+             t.innerText = `${name}'s Turn`;
+             t.style.color = p.color;
+        }, 1500);
+    }
+
+    function playerWin(player) {
+        let name = player.type === 'cpu' ? 'COMPUTER' : `PLAYER ${player.id+1}`;
+        winnerText.innerText = `${name} WINS!`;
+        winnerText.style.color = player.color;
+        winOverlay.style.display = 'flex';
+    }
+
+    function resetGame() {
+        winOverlay.style.display = 'none';
+        gameHud.style.display = 'none';
+        viewport.style.visibility = 'hidden';
+        minimapWrapper.style.display = 'none';
+        menuLayer.style.display = 'flex';
+        
+        setupStep = 0;
+        assignedColors = [];
+        document.querySelectorAll('.color-dot').forEach(d => {
+            d.classList.remove('selected');
+            d.querySelector('.dot-label').innerText = '';
+        });
+        document.getElementById('final-start-btn').style.display = 'none';
+        
+        document.getElementById('mode-select-screen').style.display = 'none';
+        
+        if(gameMode === 'computer') {
+             document.querySelector('#count-screen .num-btn:nth-child(2)').style.display = 'none'; 
+             document.querySelector('#count-screen .num-btn:nth-child(4)').style.display = 'none'; 
+        } else {
+             document.querySelectorAll('#count-screen .num-btn').forEach(b => b.style.display = 'inline-block');
+        }
+        
+        document.getElementById('count-screen').style.display = 'block';
+        document.getElementById('color-screen').style.display = 'none';
+        setCount(2); 
+    }
+
+    function returnToMenu() {
+        winOverlay.style.display = 'none';
+        gameHud.style.display = 'none';
+        viewport.style.visibility = 'hidden';
+        minimapWrapper.style.display = 'none';
+        menuLayer.style.display = 'flex';
+        resetSetup();
+    }
+
+    // --- ANIMATION ---
+    function movePawnJump(player, steps) {
+        return new Promise(async (resolve) => {
+            isAnimating = true;
+            const pawn = player.pawnEl;
+            
+            if (player.pos === 0) {
+                pawn.classList.remove('in-box');
+                pawn.classList.remove('unlocked-in-box');
+                pawn.style.top = ''; pawn.style.left = ''; pawn.style.transform = '';
+                
+                document.getElementById('start-box').removeChild(pawn);
+                document.getElementById('pawns-on-board').appendChild(pawn);
+
+                const t1 = pathArr[0];
+                pawn.style.left = (t1.x + 3) + 'px';
+                pawn.style.top = (t1.y + 3) + 'px';
+                
+                pawn.animate([{ transform: 'scale(0)' }, { transform: 'scale(1)' }], { duration: 300 });
+                await new Promise(r => setTimeout(r, 300));
+                
+                const startIdx = 0; 
+                const targetIdx = steps - 1; 
+                
+                for (let i = startIdx; i < targetIdx; i++) {
+                     const nextCoord = pathArr[i+1];
+                     await animateSingleJump(pawn, nextCoord);
+                     player.pos = i+2; 
+                     updateMinimapPawn(player);
+                }
+                player.pos = steps;
+                updateMinimapPawn(player);
+
+            } else {
+                const startIdx = player.pos - 1; 
+                const targetIdx = (player.pos + steps) - 1;
+                
+                for (let i = startIdx; i < targetIdx; i++) {
+                    const nextCoord = pathArr[i+1];
+                    if (nextCoord) {
+                        await animateSingleJump(pawn, nextCoord);
+                    } else {
+                        await animateJumpToBox(pawn);
+                    }
+                    player.pos++;
+                    updateMinimapPawn(player);
+                }
+            }
+
+            isAnimating = false;
+            resolve();
+        });
+    }
+
+    function animateSingleJump(pawn, targetCoord) {
+        return new Promise(resolve => {
+            const endX = targetCoord.x + 3;
+            const endY = targetCoord.y + 3;
+            const startX = parseFloat(pawn.style.left);
+            const startY = parseFloat(pawn.style.top);
+
+            const anim = pawn.animate([
+                { left: startX + 'px', top: startY + 'px', transform: 'translateY(0) scale(1)' },
+                { left: (startX + (endX - startX)/2) + 'px', top: (startY + (endY - startY)/2) + 'px', transform: 'translateY(-25px) scale(1.2)' },
+                { left: endX + 'px', top: endY + 'px', transform: 'translateY(0) scale(1)' }
+            ], { duration: 250, easing: 'ease-in-out' });
+
+            anim.onfinish = () => {
+                pawn.style.left = endX + 'px';
+                pawn.style.top = endY + 'px';
+                resolve();
+            };
+        });
+    }
+
+    function animateJumpToBox(pawn) {
+        return new Promise(resolve => {
+            const winBox = document.getElementById('win-box');
+            const endX = parseFloat(winBox.style.left) + 40;
+            const endY = parseFloat(winBox.style.top) + 40;
+            const startX = parseFloat(pawn.style.left);
+            const startY = parseFloat(pawn.style.top);
+
+            const anim = pawn.animate([
+                { left: startX + 'px', top: startY + 'px', transform: 'translateY(0) scale(1)' },
+                { left: (startX + (endX - startX)/2) + 'px', top: (startY + (endY - startY)/2) + 'px', transform: 'translateY(-40px) scale(1.5)' },
+                { left: endX + 'px', top: endY + 'px', transform: 'translateY(0) scale(1)' }
+            ], { duration: 400, easing: 'ease-in-out' });
+
+            anim.onfinish = () => {
+                pawn.style.left = endX + 'px';
+                pawn.style.top = endY + 'px';
+                resolve();
+            };
+        });
+    }
+
+    function renderPawns() {
+        const box = document.getElementById('start-box');
+        Array.from(box.children).forEach(c => { if(c.classList.contains('pawn')) c.remove(); });
+        document.getElementById('pawns-on-board').innerHTML = '';
+        drawMinimap();
+
+        const positions = [
+            { t: '15px', l: '15px' },   
+            { t: '15px', l: '65px' },   
+            { t: '40px', l: '40px' },   
+            { t: '65px', l: '15px' },   
+            { t: '65px', l: '65px' }    
+        ];
+
+        players.forEach((p, idx) => {
+            const div = document.createElement('div');
+            div.className = 'pawn in-box';
+            div.style.color = p.color; 
+            div.style.backgroundColor = p.color; 
+            div.innerText = p.id + 1;
+            
+            if(idx < 5) {
+                div.style.top = positions[idx].t;
+                div.style.left = positions[idx].l;
+            } else {
+                div.style.top = '40px'; div.style.left = '40px';
+            }
+            
+            p.pawnEl = div;
+            box.appendChild(div);
+            
+            const mmDot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            mmDot.setAttribute("class", "mm-dot");
+            mmDot.setAttribute("fill", p.color);
+            mmDot.setAttribute("cx", 20); 
+            mmDot.setAttribute("cy", 370);
+            minimapContent.appendChild(mmDot);
+            p.mmPawnEl = mmDot;
+        });
+    }
+
+    // --- MINIMAP LOGIC ---
+    let minimapScale = 0.25; 
+    let mmDrag = false, mmStartX = 0, mmScrollLeft = 0;
+
+    function drawMinimap() {
+        minimapContent.innerHTML = '';
+        const totalWidth = board.offsetWidth;
+        const mmWidth = totalWidth * minimapScale;
+        minimapContent.style.width = mmWidth + 'px';
+        minimapContent.setAttribute("viewBox", `0 0 ${totalWidth} 420`);
+
+        if(pathArr.length > 0) {
+            let d = `M ${pathArr[0].x+16} ${pathArr[0].y+16}`;
+            for(let i=1; i<pathArr.length; i++) {
+                d += ` L ${pathArr[i].x+16} ${pathArr[i].y+16}`;
+            }
+            const last = pathArr[pathArr.length-1];
+            d += ` L ${last.x+16 + 40} ${last.y+16}`;
+
+            const pathEl = document.createElementNS("http://www.w3.org/2000/svg", "path");
+            pathEl.setAttribute("d", d);
+            pathEl.setAttribute("class", "mm-path");
+            minimapContent.appendChild(pathEl);
+            
+            const startC = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            startC.setAttribute("cx", pathArr[0].x+16);
+            startC.setAttribute("cy", pathArr[0].y+16);
+            startC.setAttribute("class", "mm-start");
+            minimapContent.appendChild(startC);
+            
+            const winC = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            winC.setAttribute("cx", last.x+16 + 40);
+            winC.setAttribute("cy", last.y+16);
+            winC.setAttribute("class", "mm-win");
+            minimapContent.appendChild(winC);
+        }
+    }
+
+    function updateMinimapPawn(player) {
+        if(!player.mmPawnEl) return;
+        if(!player.hasStarted || player.pos === 0) {
+            player.mmPawnEl.setAttribute("cx", 30 + (player.id * 10));
+            player.mmPawnEl.setAttribute("cy", 370);
+        } else if(player.pos <= pathArr.length) {
+            const coord = pathArr[player.pos-1];
+            player.mmPawnEl.setAttribute("cx", coord.x + 16);
+            player.mmPawnEl.setAttribute("cy", coord.y + 16);
+        } else {
+            const last = pathArr[pathArr.length-1];
+            player.mmPawnEl.setAttribute("cx", last.x + 16 + 40);
+            player.mmPawnEl.setAttribute("cy", last.y + 16);
+        }
+    }
+
+    minimapWrapper.addEventListener('pointerdown', (e) => {
+        mmDrag = true;
+        mmStartX = e.clientX;
+        mmScrollLeft = minimapWrapper.scrollLeft;
+        minimapWrapper.style.cursor = "grabbing";
+    });
+    window.addEventListener('pointermove', (e) => {
+        if(mmDrag) {
+            const dx = e.clientX - mmStartX;
+            let nextScroll = mmScrollLeft - dx;
+            // Limit Right
+            // Get Win Point position on minimap
+            const last = pathArr[pathArr.length-1];
+            const winX = (last.x + 16 + 40) * minimapScale; // Win point X on MM
+            const wrapperW = minimapWrapper.clientWidth;
+            // Scroll max so win point is at right edge
+            const maxScroll = winX - wrapperW + 20; // 20px padding
+            
+            if(nextScroll > maxScroll) nextScroll = maxScroll;
+            if(nextScroll < 0) nextScroll = 0;
+            minimapWrapper.scrollLeft = nextScroll;
+        }
+    });
+    window.addEventListener('pointerup', () => {
+        if(mmDrag) {
+            mmDrag = false;
+            minimapWrapper.style.cursor = "grab";
+        }
+    });
+
+    // --- MAIN BOARD DRAG ---
+    let isDragging = false, velocity = 0, lastX = 0, lastTime = 0, currentTransX = 0, animId = null;
+
+    viewport.addEventListener('pointerdown', (e) => {
+        if(e.target.closest('#game-hud') || e.target.closest('#minimap-wrapper')) return;
+        
+        // BOARD RESTRICTION: Only drag if touching board
+        if (!board.contains(e.target)) return;
+
+        isDragging = true;
+        lastX = e.clientX;
+        lastTime = performance.now();
+        velocity = 0;
+        cancelAnimationFrame(animId);
+        
+        const style = window.getComputedStyle(board);
+        currentTransX = new WebKitCSSMatrix(style.transform).m41;
+        viewport.style.cursor = "grabbing";
+    });
+
+    viewport.addEventListener('pointermove', (e) => {
+        if(!isDragging) return;
+        e.preventDefault();
+        const now = performance.now();
+        const deltaX = e.clientX - lastX;
+        const dt = now - lastTime;
+        
+        if (dt > 0) velocity = deltaX / dt; 
+        
+        let nextX = currentTransX + deltaX;
+        const maxScroll = window.innerWidth - board.offsetWidth;
+        if(nextX > 0) nextX = 0;
+        if(nextX < maxScroll) nextX = maxScroll;
+        
+        currentTransX = nextX;
+        board.style.transform = `translateX(${currentTransX}px)`;
+        lastX = e.clientX;
+        lastTime = now;
+    });
+
+    viewport.addEventListener('pointerup', () => {
+        isDragging = false;
+        viewport.style.cursor = "grab";
+        requestAnimationFrame(applyMomentum);
+    });
+    viewport.addEventListener('pointerleave', () => { isDragging = false; requestAnimationFrame(applyMomentum); });
+
+    function applyMomentum() {
+        if (isDragging) return;
+        velocity *= 0.95; // Friction
+        if (Math.abs(velocity) < 0.01) return;
+
+        currentTransX += velocity * 16;
+        const maxScroll = window.innerWidth - board.offsetWidth;
+        
+        // Hard Stop
+        if (currentTransX > 0) { currentTransX = 0; velocity = 0; }
+        else if (currentTransX < maxScroll) { currentTransX = maxScroll; velocity = 0; }
+
+        board.style.transform = `translateX(${currentTransX}px)`;
+        animId = requestAnimationFrame(applyMomentum);
+    }
+
+    // --- GRAPHICS ---
+    const TILE = 32; 
+    const pairMap = { 7:1, 15:1, 24:2, 35:2, 31:3, 47:3, 44:4, 53:4, 60:5, 71:5, 77:6, 92:6, 84:7, 100:7, 106:8, 114:8, 122:9, 136:9, 128:10, 143:10, 150:11, 158:11, 164:12, 173:12, 170:13, 181:13, 184:14, 195:14, 190:15, 203:15, 199:16, 211:16, 218:17, 226:17, 232:18, 242:18, 237:19, 250:19, 254:20, 258:20 };
+
+    function generateRoad() {
+        pathArr = [];
+        let x = 65 - (TILE / 2), y = 272; 
+        function addMove(dir, count) {
+            for (let i = 0; i < count; i++) {
+                pathArr.push({ x, y });
+                if (dir === 'UP') y -= TILE; else if (dir === 'DOWN') y += TILE;
+                else if (dir === 'LEFT') x -= TILE; else if (dir === 'RIGHT') x += TILE;
+                if (y < 16) y = 16; if (y > 368) y = 368;
+            }
+        }
+        addMove('UP', 8); addMove('RIGHT', 12); addMove('DOWN', 6);
+        addMove('LEFT', 8); addMove('DOWN', 4); addMove('RIGHT', 17);
+        addMove('UP', 11); addMove('RIGHT', 12); addMove('DOWN', 5);
+        addMove('LEFT', 6); addMove('DOWN', 6); addMove('RIGHT', 13);
+        addMove('UP', 6); addMove('LEFT', 4); addMove('UP', 5);
+        addMove('RIGHT', 12); addMove('DOWN', 11); addMove('RIGHT', 14);
+        addMove('UP', 5); addMove('LEFT', 7); addMove('UP', 7);
+        addMove('RIGHT', 10); addMove('DOWN', 10); addMove('RIGHT', 6);
+        addMove('UP', 5); addMove('RIGHT', 15); addMove('DOWN', 5);
+        addMove('RIGHT', 6); addMove('UP', 9); addMove('RIGHT', 15);
+
+        pathArr.forEach((pos, index) => {
+            const num = index + 1;
+            const tile = document.createElement('div');
+            tile.className = 'tile';
+            if (!pairMap[num]) {
+                tile.style.backgroundColor = '#f1c40f'; 
+                tile.style.border = '1px solid #d4ac0d';
+            } else {
+                if ([7, 15, 31, 47, 84, 100, 170, 181, 218, 226, 254, 258].includes(num)) tile.className += ' portal-tunnel';
+                if ([24, 35, 77, 92, 164, 173, 199, 211].includes(num)) tile.className += ' portal-river';
+                if ([44, 53, 106, 114, 184, 195, 232, 242].includes(num)) tile.className += ' portal-road';
+                if ([60, 71, 122, 136, 190, 203].includes(num)) tile.className += ' portal-galaxy';
+                if ([128, 143, 237, 250].includes(num)) tile.className += ' portal-rail';
+                if ([150, 158].includes(num)) tile.className += ' portal-teleport';
+            }
+            tile.style.left = pos.x + 'px'; tile.style.top = pos.y + 'px';
+            if (pairMap[num]) tile.innerText = pairMap[num];
+            board.appendChild(tile);
+        });
+        
+        const last = pathArr[pathArr.length-1];
+        const winLeft = last.x + TILE;
+        document.getElementById('win-box').style.left = winLeft + 'px'; 
+        document.getElementById('win-box').style.top = (last.y - 39) + 'px';
+        board.style.width = (winLeft + 110 + 10) + 'px';
+        
+        setupGraphics();
+    }
+
+    function createPathString(d, type) {
+        if (type === 'tunnel') return `<path d="${d}" class="pipe-outline"/><path d="${d}" class="pipe-silver"/>`;
+        if (type === 'river') {
+            let grass = `<path d="${d}" class="river-grass"/>`;
+            let fish = '';
+            for(let i=0; i<8; i++) {
+                let icon = (i % 2 === 0) ? '🐟' : '🐠'; 
+                let dur = 8 + Math.random() * 5;
+                let begin = i * 1.5;
+                fish += `<g class="fish-group"><animateMotion dur="${dur}s" repeatCount="indefinite" rotate="auto" path="${d}" begin="${begin}s"/><text class="fish-tiny" text-anchor="middle" dominant-baseline="central" transform="scale(-1, 1)">${icon}</text></g>`;
+            }
+            let w1 = `<path d="${d}" class="wave-layer" style="stroke-width:4px; stroke-dasharray:20,30; animation-duration:5s; opacity: 0.3;"/>`;
+            let w2 = `<path d="${d}" class="wave-layer" style="stroke-width:2px; stroke-dasharray:50,50; animation-duration:8s; opacity: 0.2;"/>`;
+            let w3 = `<path d="${d}" class="wave-layer" style="stroke-width:1px; stroke-dasharray:10,90; animation-duration:4s; opacity: 0.4;"/>`;
+            return grass + `<path d="${d}" class="river-base"/>${fish}${w1}${w2}${w3}`;
+        }
+        if (type === 'road') return `<path d="${d}" class="road-base"/><path d="${d}" class="road-lines"/>`;
+        if (type === 'rail') return `<path d="${d}" class="rail-bed"/><path d="${d}" class="rail-tracks"/>`;
+        if (type === 'galaxy') return `<path d="${d}" class="galaxy-base"/><path d="${d}" class="galaxy-core"/><path d="${d}" class="galaxy-stars"/>`;
+        return '';
+    }
+
+    function setupGraphics() {
+        const underLayer = document.getElementById('under-layer');
+        const middleLayer = document.getElementById('middle-layer');
+        const topLayer = document.getElementById('top-layer');
+        const p = (i) => pathArr[i-1];
+        let uH = "", mH = "", tH = "";
+        uH += createPathString(`M ${p(60).x+TILE} ${p(60).y+16} C ${p(60).x+132} ${p(60).y+16}, ${p(71).x+16} ${p(71).y+132}, ${p(71).x+16} ${p(71).y+TILE}`, 'galaxy');
+        uH += createPathString(`M ${p(122).x+TILE} ${p(122).y+16} C ${p(122).x+212} ${p(122).y+16}, ${p(136).x+212} ${p(136).y+16}, ${p(136).x+TILE} ${p(136).y+16}`, 'galaxy');
+        uH += createPathString(`M ${p(190).x+TILE} ${p(190).y+16} C ${p(190).x+152} ${p(190).y+16}, ${p(203).x+16} ${p(203).y-120}, ${p(203).x+16} ${p(203).y}`, 'galaxy');
+        mH += createPathString(`M ${p(7).x+TILE} ${p(7).y+16} C ${p(7).x+100} ${p(7).y+16}, ${p(15).x+16} ${p(15).y+100}, ${p(15).x+16} ${p(15).y+TILE}`, 'tunnel');
+        mH += createPathString(`M ${p(31).x+16} ${p(31).y+TILE} C ${p(31).x+16} ${p(31).y+110}, ${p(47).x+16} ${p(47).y-80}, ${p(47).x+16} ${p(47).y}`, 'tunnel');
+        mH += createPathString(`M ${p(44).x+16} ${p(44).y+TILE} C ${p(44).x+16} ${p(44).y+80}, ${p(53).x+16} ${p(53).y+80}, ${p(53).x+16} ${p(53).y+TILE}`, 'road');
+        mH += createPathString(`M ${p(84).x+16} ${p(84).y+TILE} C ${p(84).x+16} ${p(84).y+92}, ${p(100).x+16} ${p(100).y-60}, ${p(100).x+16} ${p(100).y}`, 'tunnel');
+        mH += createPathString(`M ${p(106).x+16} ${p(106).y} C ${p(106).x+16} ${p(106).y-60}, ${p(114).x-60} ${p(114).y+16}, ${p(114).x} ${p(114).y+16}`, 'road');
+        mH += createPathString(`M ${p(128).x+16} ${p(128).y+TILE} C ${p(128).x+16} ${p(128).y+112}, ${p(143).x-80} ${p(143).y+16}, ${p(143).x} ${p(143).y+16}`, 'rail');
+        mH += createPathString(`M ${p(170).x+16} ${p(170).y} C ${p(170).x+16} ${p(170).y-80}, ${p(181).x+16} ${p(181).y+112}, ${p(181).x+16} ${p(181).y+TILE}`, 'tunnel');
+        mH += createPathString(`M ${p(184).x+16} ${p(184).y+TILE} C ${p(184).x+16} ${p(184).y+112}, ${p(195).x-80} ${p(195).y+16}, ${p(195).x} ${p(195).y+16}`, 'road');
+        mH += createPathString(`M ${p(218).x+16} ${p(218).y} C ${p(218).x+16} ${p(218).y-80}, ${p(226).x+16} ${p(226).y-80}, ${p(226).x+16} ${p(226).y}`, 'tunnel');
+        mH += createPathString(`M ${p(232).x+16} ${p(232).y} C ${p(232).x+16} ${p(232).y-80}, ${p(242).x-80} ${p(242).y+16}, ${p(242).x} ${p(242).y+16}`, 'road');
+        mH += createPathString(`M ${p(237).x+TILE} ${p(237).y+16} C ${p(237).x+132} ${p(237).y+16}, ${p(250).x+16} ${p(250).y+132}, ${p(250).x+16} ${p(250).y+TILE}`, 'rail');
+        mH += createPathString(`M ${p(254).x+16} ${p(254).y+TILE} C ${p(254).x+16} ${p(254).y+112}, ${p(258).x+16} ${p(258).y+112}, ${p(258).x+16} ${p(258).y+TILE}`, 'tunnel');
+        tH += createPathString(`M ${p(24).x} ${p(24).y+16} C ${p(24).x-80} ${p(24).y+16}, ${p(35).x+16} ${p(35).y-80}, ${p(35).x+16} ${p(35).y}`, 'river');
+        tH += createPathString(`M ${p(77).x+16} ${p(77).y+TILE} C ${p(77).x+16} ${p(77).y+120}, ${p(92).x+152} ${p(92).y+16}, ${p(92).x+TILE} ${p(92).y+16}`, 'river');
+        tH += createPathString(`M ${p(164).x} ${p(164).y+16} C ${p(164).x-120} ${p(164).y+16}, ${p(173).x+16} ${p(173).y+152}, ${p(173).x+16} ${p(173).y+TILE}`, 'river');
+        tH += createPathString(`M ${p(199).x+TILE} ${p(199).y+16} C ${p(199).x+132} ${p(199).y+16}, ${p(211).x-100} ${p(211).y+16}, ${p(211).x} ${p(211).y+16}`, 'river');
+        underLayer.innerHTML = uH; 
+        middleLayer.innerHTML = mH; 
+        topLayer.innerHTML = tH;
+        const iconsDiv = document.getElementById('icons-container');
+        iconsDiv.innerHTML = ''; 
+    }
+</script>
+</body>
+</html>
